@@ -50,9 +50,8 @@ export const App: React.FC = () => {
 
       if (h === '/active') {
         setFilter('active');
-      // eslint-disable-next-line prettier/prettier
-      }
-      else if (h === '/completed') {
+        // eslint-disable-next-line prettier/prettier
+      } else if (h === '/completed') {
         setFilter('completed');
       } else {
         setFilter('all');
@@ -93,8 +92,7 @@ export const App: React.FC = () => {
         if (!cancelled) {
           showNotification('load');
         }
-      }
-      finally {
+      } finally {
         if (!cancelled) {
           setLoading(false);
         }
@@ -212,19 +210,22 @@ export const App: React.FC = () => {
           <nav className="filter" data-cy="Filter">
             <a
               href="#/"
-              className={`filter__link ${filter === 'all' ? 'selected' : ''}`} data-cy="FilterLinkAll"
+              className={`filter__link ${filter === 'all' ? 'selected' : ''}`}
+              data-cy="FilterLinkAll"
             >
               All
             </a>
             <a
               href="#/active"
-              className={`filter__link ${filter === 'active' ? 'selected' : ''}`} data-cy="FilterLinkActive"
+              className={`filter__link ${filter === 'active' ? 'selected' : ''}`}
+              data-cy="FilterLinkActive"
             >
               Active
             </a>
             <a
               href="#/completed"
-              className={`filter__link ${filter === 'completed' ? 'selected' : ''}`} data-cy="FilterLinkCompleted"
+              className={`filter__link ${filter === 'completed' ? 'selected' : ''}`}
+              data-cy="FilterLinkCompleted"
             >
               Completed
             </a>

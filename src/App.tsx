@@ -1,7 +1,6 @@
 /* eslint-disable jsx-a11y/label-has-associated-control */
 /* eslint-disable jsx-a11y/control-has-associated-label */
-/* src/App.tsx */
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useEffect, useRef, useState, useCallback } from 'react';
 import { UserWarning } from './UserWarning';
 import { USER_ID } from './api/todos';
 import { client } from './utils/fetchClient';
@@ -24,37 +23,38 @@ export const App: React.FC = () => {
   const notifRef = useRef<HTMLDivElement | null>(null);
   const newTodoRef = useRef<HTMLInputElement | null>(null);
 
-  const hideNotification = () => {
-    if (notifRef.current) {
-      notifRef.current.classList.add('hidden');
-    }
-  };
+  const hideNotification = useCallback(() => {
+    notifRef.current?.classList.add('hidden');
+  }, []);
 
-  const showNotification = (key: keyof typeof NOTIF_MESSAGES) => {
+  const showNotification = useCallback((key: keyof typeof NOTIF_MESSAGES) => {
     const msg = NOTIF_MESSAGES[key];
 
     if (notifRef.current) {
       notifRef.current.classList.remove('hidden');
+
       notifRef.current.textContent = msg;
     }
 
     window.setTimeout(() => {
       hideNotification();
     }, 3000);
-  };
 
-  // read hash for filter
+  }, [hideNotification] );
+
   useEffect(() => {
     const applyHash = () => {
-      const h = window.location.hash.replace('#', '');
+      const hash = window.location.hash.replace('#', '');
 
-      if (h === '/active') {
-        setFilter('active');
-        // eslint-disable-next-line prettier/prettier
-      } else if (h === '/completed') {
-        setFilter('completed');
-      } else {
-        setFilter('all');
+      switch (hash) {
+        case '/active':
+          setFilter('active');
+          break;
+        case '/completed':
+          setFilter('completed');
+          break;
+        default:
+          setFilter('all');
       }
     };
 
@@ -64,12 +64,10 @@ export const App: React.FC = () => {
     return () => window.removeEventListener('hashchange', applyHash);
   }, []);
 
-  // focus input on mount
   useEffect(() => {
     newTodoRef.current?.focus();
   }, []);
 
-  // load todos
   useEffect(() => {
     if (!USER_ID) {
       return;
@@ -80,15 +78,14 @@ export const App: React.FC = () => {
     const loadTodos = async () => {
       hideNotification();
       setLoading(true);
+
       try {
-        // IMPORTANT: use your client (named export)
         const data = await client.get<Todo[]>(`/todos?userId=${USER_ID}`);
 
         if (!cancelled) {
           setTodos(Array.isArray(data) ? data : []);
         }
-      } catch (err) {
-        // show error (tests expect specific text)
+      } catch {
         if (!cancelled) {
           showNotification('load');
         }
@@ -104,7 +101,7 @@ export const App: React.FC = () => {
     return () => {
       cancelled = true;
     };
-  }, []);
+  }, [showNotification, hideNotification]);
 
   const activeCount = todos.filter(t => !t.completed).length;
   const completedCount = todos.length - activeCount;
@@ -156,90 +153,88 @@ export const App: React.FC = () => {
           </form>
         </header>
 
-        <section
-          className="todoapp__main"
-          data-cy="TodoList"
-          style={{ display: todos.length === 0 ? 'none' : undefined }}
-        >
-          {visibleTodos.map(todo => (
-            <div
-              key={todo.id}
-              data-cy="Todo"
-              className={`todo ${todo.completed ? 'completed' : ''}`}
-            >
-              <label className="todo__status-label">
-                <input
-                  data-cy="TodoStatus"
-                  type="checkbox"
-                  className="todo__status"
-                  checked={todo.completed}
-                  readOnly
-                />
-              </label>
-
-              <span data-cy="TodoTitle" className="todo__title">
-                {todo.title}
-              </span>
-
-              <button
-                type="button"
-                className="todo__remove"
-                data-cy="TodoDelete"
-                disabled={loading}
+        {todos.length > 0 && (
+          <section className="todoapp__main" data-cy="TodoList">
+            {visibleTodos.map(todo => (
+              <div
+                key={todo.id}
+                data-cy="Todo"
+                className={`todo ${todo.completed ? 'completed' : ''}`}
               >
-                ×
-              </button>
+                <label className="todo__status-label">
+                  <input
+                    data-cy="TodoStatus"
+                    type="checkbox"
+                    className="todo__status"
+                    checked={todo.completed}
+                    readOnly
+                  />
+                </label>
 
-              <div data-cy="TodoLoader" className="modal overlay">
-                <div className="modal-background has-background-white-ter" />
-                <div className="loader" />
+                <span data-cy="TodoTitle" className="todo__title">
+                  {todo.title}
+                </span>
+
+                <button
+                  type="button"
+                  className="todo__remove"
+                  data-cy="TodoDelete"
+                  disabled={loading}
+                >
+                  ×
+                </button>
+
+                <div data-cy="TodoLoader" className="modal overlay">
+                  <div className="modal-background has-background-white-ter" />
+                  <div className="loader" />
+                </div>
               </div>
-            </div>
-          ))}
-        </section>
+            ))}
+          </section>
+        )}
 
-        <footer
-          className="todoapp__footer"
-          data-cy="Footer"
-          style={{ display: todos.length === 0 ? 'none' : undefined }}
-        >
-          <span className="todo-count" data-cy="TodosCounter">
-            {activeCount} {activeCount === 1 ? 'item' : 'items'} left
-          </span>
+        {todos.length > 0 && (
+          <footer className="todoapp__footer" data-cy="Footer">
+            <span className="todo-count" data-cy="TodosCounter">
+              {activeCount} {activeCount === 1 ? 'item' : 'items'} left
+            </span>
 
-          <nav className="filter" data-cy="Filter">
-            <a
-              href="#/"
-              className={`filter__link ${filter === 'all' ? 'selected' : ''}`}
-              data-cy="FilterLinkAll"
-            >
-              All
-            </a>
-            <a
-              href="#/active"
-              className={`filter__link ${filter === 'active' ? 'selected' : ''}`}
-              data-cy="FilterLinkActive"
-            >
-              Active
-            </a>
-            <a
-              href="#/completed"
-              className={`filter__link ${filter === 'completed' ? 'selected' : ''}`}
-              data-cy="FilterLinkCompleted"
-            >
-              Completed
-            </a>
-          </nav>
+            <nav className="filter" data-cy="Filter">
+              <a
+                href="#/"
+                className={`filter__link ${filter === 'all' ? 'selected' : ''}`}
+                data-cy="FilterLinkAll"
+              >
+                All
+              </a>
 
-          <button
-            type="button"
-            className="todoapp__clear-completed"
-            data-cy="ClearCompletedButton"
-            disabled={completedCount === 0 || loading}
-          >
-            Clear completed
-          </button>
-        </footer>
+              <a
+                href="#/active"
+                className={`filter__link ${filter === 'active' ? 'selected' : ''}`}
+                data-cy="FilterLinkActive"
+              >
+                Active
+              </a>
+
+              <a
+                href="#/completed"
+                className={`filter__link ${filter === 'completed' ? 'selected' : ''}`}
+                data-cy="FilterLinkCompleted"
+              >
+                Completed
+              </a>
+            </nav>
+
+            <button
+              type="button"
+              className="todoapp__clear-completed"
+              data-cy="ClearCompletedButton"
+              disabled={completedCount === 0 || loading}
+            >
+              Clear completed
+            </button>
+          </footer>
+        )}
       </div>
 
       <div
